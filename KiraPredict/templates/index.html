@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KiraPredict — Wage Predictor</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 { margin: 0; color: var(--primary); }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.15rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+        .grid-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .dynamic-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        input, select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: #ffffff;
+        }
+        input[readonly] {
+            background-color: #f1f5f9;
+            color: #64748b;
+        }
+        .deduct-preview {
+            min-width: 75px;
+            text-align: right;
+            font-size: 0.9rem;
+            color: var(--danger);
+            font-weight: 500;
+        }
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-weight: 600;
+        }
+        .btn-add { background: var(--primary); color: white; }
+        .btn-remove { background: var(--danger); color: white; padding: 8px 12px; }
+        .summary-box {
+            background: #1e293b;
+            color: white;
+            border-radius: 10px;
+            padding: 24px;
+        }
+        .summary-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1.05rem;
+        }
+        .total-line {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #475569;
+            padding-top: 15px;
+            margin-top: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--success);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>KiraPredict</h1>
+    <p>Real-Time Wage & Paycheck Estimator</p>
+</header>
+
+<!-- Base & Multiplier Rates -->
+<div class="card">
+    <h2>1. Hourly Rates & Hours Worked</h2>
+    <div class="grid-row" style="font-weight: bold; font-size: 0.85rem; color: #64748b;">
+        <div>Pay Type</div>
+        <div>Rate ($/hr)</div>
+        <div>Hours</div>
+        <div>Subtotal</div>
+    </div>
+
+    <div class="grid-row">
+        <div><strong>Base Hourly Pay</strong></div>
+        <div><input type="number" id="baseRate" step="0.01" min="0" placeholder="0.00" oninput="calculateTotal()"></div>
+        <div><input type="number" id="regHours" step="0.25" min="0" placeholder="0" oninput="calculateTotal()"></div>
+        <div id="regSub">$0.00</div>
+    </div>
+
+    <div class="grid-row">
+        <div>Overtime (1.5x)</div>
+        <div><input type="number" id="otRate" readonly value="0.00"></div>
+        <div><input type="number" id="otHours" step="0.25" min="0" placeholder="0" oninput="calculateTotal()"></div>
+        <div id="otSub">$0.00</div>
+    </div>
+
+    <div class="grid-row">
+        <div>Double Pay (2x)</div>
+        <div><input type="number" id="doubleRate" readonly value="0.00"></div>
+        <div><input type="number" id="doubleHours" step="0.25" min="0" placeholder="0" oninput="calculateTotal()"></div>
+        <div id="doubleSub">$0.00</div>
+    </div>
+
+    <div class="grid-row">
+        <div>Triple Pay (3x)</div>
+        <div><input type="number" id="tripleRate" readonly value="0.00"></div>
+        <div><input type="number" id="tripleHours" step="0.25" min="0" placeholder="0" oninput="calculateTotal()"></div>
+        <div id="tripleSub">$0.00</div>
+    </div>
+</div>
+
+<!-- Allowances -->
+<div class="card">
+    <h2>2. Allowances</h2>
+    <div id="allowancesList"></div>
+    <button type="button" class="btn-add" onclick="addAllowance()">+ Add Allowance</button>
+</div>
+
+<!-- Deductions -->
+<div class="card">
+    <h2>3. Deductions</h2>
+    <div id="deductionsList"></div>
+    <button type="button" class="btn-add" onclick="addDeduction()">+ Add Deduction</button>
+</div>
+
+<!-- Automatic Summary -->
+<div class="summary-box">
+    <div class="summary-line">
+        <span>Hourly Wages Subtotal:</span>
+        <span id="wagesTotal">$0.00</span>
+    </div>
+    <div class="summary-line">
+        <span>Total Allowances:</span>
+        <span id="allowancesTotal">+$0.00</span>
+    </div>
+    <div class="summary-line">
+        <span>Gross Pay:</span>
+        <span id="grossTotal">$0.00</span>
+    </div>
+    <div class="summary-line" style="color: #fca5a5;">
+        <span>Total Deductions:</span>
+        <span id="deductionsTotal">-$0.00</span>
+    </div>
+    <div class="total-line">
+        <span>Predicted Net Pay:</span>
+        <span id="netTotal">$0.00</span>
+    </div>
+</div>
+
+<script>
+    function addAllowance() {
+        const container = document.getElementById('allowancesList');
+        const row = document.createElement('div');
+        row.className = 'dynamic-row allowance-item';
+        row.innerHTML = `
+            <input type="text" placeholder="Allowance Name (e.g., Travel, Meal)" style="flex: 2;">
+            <input type="number" class="allow-rate" step="0.01" min="0" placeholder="Rate ($)" style="flex: 1;" oninput="calculateTotal()">
+            <input type="number" class="allow-qty" step="1" min="0" value="1" placeholder="Qty" style="flex: 1;" oninput="calculateTotal()">
+            <button type="button" class="btn-remove" onclick="this.parentElement.remove(); calculateTotal();">✕</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function addDeduction() {
+        const container = document.getElementById('deductionsList');
+        const row = document.createElement('div');
+        row.className = 'dynamic-row deduction-item';
+        row.innerHTML = `
+            <input type="text" placeholder="Deduction Name (e.g., Tax, NIS, Union)" style="flex: 2;">
+            <select class="deduct-type" style="flex: 1;" onchange="updateDeductionPlaceholder(this); calculateTotal();">
+                <option value="flat">$ Fixed</option>
+                <option value="percent">% of Gross</option>
+            </select>
+            <input type="number" class="deduct-rate" step="0.01" min="0" placeholder="Amount ($)" style="flex: 1;" oninput="calculateTotal()">
+            <span class="deduct-preview">-$0.00</span>
+            <button type="button" class="btn-remove" onclick="this.parentElement.remove(); calculateTotal();">✕</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function updateDeductionPlaceholder(selectEl) {
+        const inputEl = selectEl.parentElement.querySelector('.deduct-rate');
+        inputEl.placeholder = selectEl.value === 'percent' ? 'Rate (%)' : 'Amount ($)';
+    }
+
+    function calculateTotal() {
+        // 1. Get Base Rate & Set Multipliers
+        const baseRate = parseFloat(document.getElementById('baseRate').value) || 0;
+        const otRate = baseRate * 1.5;
+        const doubleRate = baseRate * 2;
+        const tripleRate = baseRate * 3;
+
+        document.getElementById('otRate').value = otRate.toFixed(2);
+        document.getElementById('doubleRate').value = doubleRate.toFixed(2);
+        document.getElementById('tripleRate').value = tripleRate.toFixed(2);
+
+        // 2. Get Hours & Calculate Hourly Subtotals
+        const regHours = parseFloat(document.getElementById('regHours').value) || 0;
+        const otHours = parseFloat(document.getElementById('otHours').value) || 0;
+        const doubleHours = parseFloat(document.getElementById('doubleHours').value) || 0;
+        const tripleHours = parseFloat(document.getElementById('tripleHours').value) || 0;
+
+        const regSub = baseRate * regHours;
+        const otSub = otRate * otHours;
+        const doubleSub = doubleRate * doubleHours;
+        const tripleSub = tripleRate * tripleHours;
+
+        document.getElementById('regSub').innerText = `$${regSub.toFixed(2)}`;
+        document.getElementById('otSub').innerText = `$${otSub.toFixed(2)}`;
+        document.getElementById('doubleSub').innerText = `$${doubleSub.toFixed(2)}`;
+        document.getElementById('tripleSub').innerText = `$${tripleSub.toFixed(2)}`;
+
+        const wagesTotal = regSub + otSub + doubleSub + tripleSub;
+
+        // 3. Calculate Allowances (Rate * Quantity)
+        let allowancesTotal = 0;
+        document.querySelectorAll('.allowance-item').forEach(row => {
+            const rate = parseFloat(row.querySelector('.allow-rate').value) || 0;
+            const qty = parseFloat(row.querySelector('.allow-qty').value) || 0;
+            allowancesTotal += (rate * qty);
+        });
+
+        // 4. Calculate Gross Pay (needed before percentage deductions)
+        const grossTotal = wagesTotal + allowancesTotal;
+
+        // 5. Calculate Deductions ($ Fixed or % of Gross)
+        let deductionsTotal = 0;
+        document.querySelectorAll('.deduction-item').forEach(row => {
+            const type = row.querySelector('.deduct-type').value;
+            const rate = parseFloat(row.querySelector('.deduct-rate').value) || 0;
+            const amount = type === 'percent' ? grossTotal * (rate / 100) : rate;
+            
+            row.querySelector('.deduct-preview').innerText = `-$${amount.toFixed(2)}`;
+            deductionsTotal += amount;
+        });
+
+        // 6. Final Net Total
+        const netTotal = grossTotal - deductionsTotal;
+
+        document.getElementById('wagesTotal').innerText = `$${wagesTotal.toFixed(2)}`;
+        document.getElementById('allowancesTotal').innerText = `+$${allowancesTotal.toFixed(2)}`;
+        document.getElementById('grossTotal').innerText = `$${grossTotal.toFixed(2)}`;
+        document.getElementById('deductionsTotal').innerText = `-$${deductionsTotal.toFixed(2)}`;
+        document.getElementById('netTotal').innerText = `$${netTotal.toFixed(2)}`;
+    }
+
+    // Initialize with one empty row each for convenience
+    addAllowance();
+    addDeduction();
+</script>
+
+</body>
+</html>
