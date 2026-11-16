@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KiraZPredict - Barbadian Wage & Shift Calculator</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
+
+    <!-- HEADER -->
+    <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 p-2.5 rounded-xl shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-umbrella-beach text-slate-950 text-xl font-bold"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        KiraZPredict <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full font-medium">Barbados Pro</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Shift Log & Automated Wage Predictor</p>
+                </div>
+            </div>
+            <div class="text-xs text-slate-400 font-medium bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl hidden sm:block">
+                Base Rate: <span class="text-emerald-400 font-bold">$13.53 / hr</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- LEFT COLUMN: WEEKLY SHIFT LOGS (7 Cols) -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-semibold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-week text-emerald-400"></i> Weekly Shift Log (Sun - Sat)
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Select your week starting Sunday to auto-populate dates</p>
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <label class="text-xs font-medium text-slate-400 whitespace-nowrap">Week Start (Sun):</label>
+                    <input type="date" id="weekStartDate" onchange="updateDayDates()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-medium w-full sm:w-auto">
+                </div>
+            </div>
+
+            <!-- Days Container -->
+            <div id="daysContainer" class="space-y-4">
+                <!-- Dynamically populated via JS -->
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: AUTOMATED LIVE TOTALS & BREAKDOWN (5 Cols) -->
+        <div class="lg:col-span-5">
+            <div class="sticky top-24 space-y-6">
+                
+                <!-- Summary Card -->
+                <div class="bg-gradient-to-b from-slate-900 to-slate-900/90 border border-emerald-500/30 rounded-3xl p-6 shadow-2xl shadow-emerald-950/20 backdrop-blur-xl">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                        <div>
+                            <span class="text-xs font-semibold text-emerald-400 uppercase tracking-widest">Automated Total</span>
+                            <h3 class="text-lg font-bold text-white">Weekly Pay Breakdown</h3>
+                        </div>
+                        <div class="bg-emerald-500/10 border border-emerald-500/20 p-2.5 rounded-2xl text-emerald-400">
+                            <i class="fa-solid fa-receipt text-xl"></i>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Breakdown Lists -->
+                    <div class="py-4 space-y-2.5 text-xs border-b border-slate-800">
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span id="lblRegSummary">Regular Pay (0 hrs @ $13.53)</span>
+                            <span id="valRegSummary" class="font-semibold text-white">$0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span id="lblOTSummary">Overtime Pay (0 hrs @ $20.30)</span>
+                            <span id="valOTSummary" class="font-semibold text-white">$0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span id="lblDTSummary">Double Pay (0 hrs @ $27.06)</span>
+                            <span id="valDTSummary" class="font-semibold text-white">$0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center text-slate-300">
+                            <span id="lblTTSummary">Triple Pay (0 hrs @ $40.59)</span>
+                            <span id="valTTSummary" class="font-semibold text-white">$0.00</span>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800/60 space-y-2">
+                            <div class="flex justify-between items-center text-emerald-400">
+                                <span id="lblEarlySummary">Early Allowance (0 @ $15.00)</span>
+                                <span id="valEarlySummary">$0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center text-emerald-400">
+                                <span id="lblMealSummary">Meal Allowance (0 @ $20.00)</span>
+                                <span id="valMealSummary">$0.00</span>
+                            </div>
+                            <div class="flex justify-between items-center text-emerald-400">
+                                <span id="lblRampSummary">Ramp Allowance (0 @ $16.00)</span>
+                                <span id="valRampSummary">$0.00</span>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800/60 flex justify-between items-center text-rose-400 font-medium">
+                            <span>NIS Deduction (11.1%) (-)</span>
+                            <span id="valTotalNIS">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Grand Net Total -->
+                    <div class="pt-6 pb-2">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="text-sm font-medium text-slate-400">Estimated Weekly Net Payout</span>
+                            <span class="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded font-medium border border-emerald-500/20">Live Calc</span>
+                        </div>
+                        <div id="valNetTotal" class="text-4xl font-black text-white tracking-tight bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">
+                            $0.00
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-6 space-y-3">
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="saveShiftsToDatabase()" class="bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/30 font-semibold py-3 px-3 rounded-xl shadow-lg transition flex items-center justify-center gap-1.5 text-xs">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Save to DB
+                            </button>
+                            <button onclick="downloadPDF()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3 px-3 rounded-xl shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-1.5 text-xs">
+                                <i class="fa-solid fa-file-pdf"></i> Download PDF
+                            </button>
+                        </div>
+                        <button onclick="window.print()" class="w-full bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 font-semibold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs">
+                            <i class="fa-solid fa-print"></i> Print Statement
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Daily Breakdown Summary List -->
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+                    <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-emerald-400"></i> Daily Wages Breakdown
+                    </h3>
+                    <div id="dailyBreakdownList" class="space-y-2 text-xs divide-y divide-slate-800/60">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="border-t border-slate-900 py-6 text-center text-xs text-slate-500">
+        KiraZPredict &bull; Barbadian Wage & Shift Predictor built with Flask
+    </footer>
+
+    <!-- CLIENT SCRIPT -->
+    <script>
+        const BASE_RATE = 13.53;
+        const daysOfWeek = [
+            { id: 'sun', name: 'Sunday', defaultStart: '00:00', defaultEnd: '00:00', defaultWorked: false },
+            { id: 'mon', name: 'Monday', defaultStart: '08:00', defaultEnd: '17:00', defaultWorked: true },
+            { id: 'tue', name: 'Tuesday', defaultStart: '08:00', defaultEnd: '17:00', defaultWorked: true },
+            { id: 'wed', name: 'Wednesday', defaultStart: '08:00', defaultEnd: '17:00', defaultWorked: true },
+            { id: 'thu', name: 'Thursday', defaultStart: '08:00', defaultEnd: '17:00', defaultWorked: true },
+            { id: 'fri', name: 'Friday', defaultStart: '08:00', defaultEnd: '17:00', defaultWorked: true },
+            { id: 'sat', name: 'Saturday', defaultStart: '00:00', defaultEnd: '00:00', defaultWorked: false }
+        ];
+
+        function getSundayDateString(d = new Date()) {
+            const date = new Date(d);
+            const day = date.getDay();
+            const diff = date.getDate() - day;
+            const sunday = new Date(date.setDate(diff));
+            return sunday.toISOString().split('T')[0];
+        }
+
+        async function initApp() {
+            let savedShifts = [];
+            let defaultWeekStart = getSundayDateString();
+
+            try {
+                const res = await fetch('/api/shifts');
+                if (res.ok) {
+                    savedShifts = await res.json();
+                    if (savedShifts.length > 0 && savedShifts[0].shift_date) {
+                        const firstDate = new Date(savedShifts[0].shift_date);
+                        if (!isNaN(firstDate)) {
+                            defaultWeekStart = getSundayDateString(firstDate);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.log('No saved records found, loading defaults.');
+            }
+
+            document.getElementById('weekStartDate').value = defaultWeekStart;
+            renderDays(savedShifts);
+            calculate();
+        }
+
+        function updateDayDates() {
+            renderDays([]);
+            calculate();
+        }
+
+        function renderDays(savedShifts) {
+            const container = document.getElementById('daysContainer');
+            container.innerHTML = '';
+
+            const startDateStr = document.getElementById('weekStartDate').value;
+            const baseDate = startDateStr ? new Date(startDateStr) : new Date();
+
+            daysOfWeek.forEach((d, index) => {
+                const saved = savedShifts.find(s => s.day_id === d.id);
+                
+                const currDate = new Date(baseDate);
+                currDate.setDate(baseDate.getDate() + index);
+                const formattedDate = currDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                const isoDate = currDate.toISOString().split('T')[0];
+
+                const isWorked = saved ? saved.is_worked : d.defaultWorked;
+                const startTime = saved ? saved.start_time : d.defaultStart;
+                const finishTime = saved ? saved.finish_time : d.defaultEnd;
+                const holidayTier = saved ? saved.holiday_tier : 1;
+                const statusType = saved ? saved.status_type : 'normal';
+                const rampChecked = saved ? saved.ramp_allowance : false;
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl transition hover:border-slate-700 day-card";
+                card.dataset.date = isoDate;
+                card.dataset.dayId = d.id;
+                card.dataset.dayName = d.name;
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-800/80">
+                        <div class="flex items-center gap-2.5">
+                            <input type="checkbox" id="worked_${d.id}" ${isWorked ? 'checked' : ''} onchange="toggleDay('${d.id}')" class="w-4 h-4 rounded accent-emerald-500 cursor-pointer">
+                            <div>
+                                <span class="font-bold text-sm text-white">${d.name}</span>
+                                <span class="text-[11px] text-emerald-400 font-medium ml-2">${formattedDate}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="badge_net_${d.id}" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div id="inputs_${d.id}" class="${isWorked ? '' : 'opacity-40 pointer-events-none'} space-y-3">
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div>
+                                <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Start Time</label>
+                                <input type="time" id="start_${d.id}" value="${startTime}" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Finish Time</label>
+                                <input type="time" id="finish_${d.id}" value="${finishTime}" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Holiday Tier</label>
+                                <select id="holiday_${d.id}" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                                    <option value="1" ${holidayTier == 1 ? 'selected' : ''}>Standard Day (1.0x)</option>
+                                    <option value="2" ${holidayTier == 2 ? 'selected' : ''}>Bank Holiday (2.0x)</option>
+                                    <option value="3" ${holidayTier == 3 ? 'selected' : ''}>Independence / Xmas (3.0x)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] uppercase font-semibold text-slate-400 mb-1">Status Type</label>
+                                <select id="status_${d.id}" onchange="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                                    <option value="normal" ${statusType === 'normal' ? 'selected' : ''}>Normal Working Day</option>
+                                    <option value="offday" ${statusType === 'offday' ? 'selected' : ''}>Worked Off-Day (2.0x)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Extra Allowances Checkboxes -->
+                        <div class="flex flex-wrap items-center gap-4 pt-2 text-xs text-slate-300">
+                            <label class="flex items-center gap-1.5 cursor-pointer hover:text-white">
+                                <input type="checkbox" id="ramp_${d.id}" ${rampChecked ? 'checked' : ''} onchange="calculate()" class="rounded accent-emerald-500"> Ramp Allowance ($16)
+                            </label>
+                            <span id="auto_early_${d.id}" class="text-[11px] text-emerald-400/80 hidden"><i class="fa-solid fa-bolt"></i> Early Allowance ($15) Added (Started 2 AM)</span>
+                            <span id="auto_meal_${d.id}" class="text-[11px] text-teal-400/80 hidden"><i class="fa-solid fa-utensils"></i> Meal Allowance ($20) Added (>= 3h OT)</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function toggleDay(id) {
+            const isChecked = document.getElementById(`worked_${id}`).checked;
+            const section = document.getElementById(`inputs_${id}`);
+            if (isChecked) {
+                section.classList.remove('opacity-40', 'pointer-events-none');
+            } else {
+                section.classList.add('opacity-40', 'pointer-events-none');
+            }
+            calculate();
+        }
+
+        function timeToMinutes(timeStr) {
+            if (!timeStr) return 0;
+            const parts = timeStr.split(':');
+            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        }
+
+        function calculate() {
+            let totalRegHours = 0;
+            let totalOTHours = 0;
+            let totalDTHours = 0;
+            let totalTTHours = 0;
+
+            let totalRegPay = 0;
+            let totalOTPay = 0;
+            let totalDTPay = 0;
+            let totalTTPay = 0;
+
+            let earlyCount = 0;
+            let mealCount = 0;
+            let rampCount = 0;
+
+            let dailyBreakdownHTML = '';
+
+            document.querySelectorAll('.day-card').forEach(card => {
+                const id = card.dataset.dayId;
+                const dayName = card.dataset.dayName;
+                const shiftDate = card.dataset.date;
+
+                const isWorked = document.getElementById(`worked_${id}`).checked;
+                const badge = document.getElementById(`badge_net_${id}`);
+                const autoEarly = document.getElementById(`auto_early_${id}`);
+                const autoMeal = document.getElementById(`auto_meal_${id}`);
+
+                if (!isWorked) {
+                    badge.innerText = "$0.00";
+                    autoEarly.classList.add('hidden');
+                    autoMeal.classList.add('hidden');
+                    return;
+                }
+
+                const startStr = document.getElementById(`start_${id}`).value;
+                const finishStr = document.getElementById(`finish_${id}`).value;
+                const holidayMultiplier = parseFloat(document.getElementById(`holiday_${id}`).value) || 1;
+                const isOffDay = document.getElementById(`status_${id}`).value === 'offday';
+                const hasRamp = document.getElementById(`ramp_${id}`).checked;
+
+                const startMin = timeToMinutes(startStr);
+                let finishMin = timeToMinutes(finishStr);
+
+                if (finishMin <= startMin) {
+                    finishMin += 24 * 60;
+                }
+
+                const totalDurationHours = Math.max(0, (finishMin - startMin) / 60);
+
+                let regHours = 0;
+                let otHours = 0;
+
+                if (totalDurationHours > 0) {
+                    if (totalDurationHours <= 8) {
+                        regHours = totalDurationHours;
+                    } else if (totalDurationHours <= 9) {
+                        regHours = 8;
+                    } else {
+                        regHours = 8;
+                        otHours = totalDurationHours - 9;
+                    }
+                }
+
+                let effectiveMultiplier = holidayMultiplier;
+                if (isOffDay && effectiveMultiplier < 2.0) {
+                    effectiveMultiplier = 2.0;
+                }
+
+                let dayRegPay = 0;
+                let dayOTPay = 0;
+                let dayDTPay = 0;
+                let dayTTPay = 0;
+
+                let dayRegHrs = 0;
+                let dayOTHrs = 0;
+                let dayDTHrs = 0;
+                let dayTTHrs = 0;
+
+                const rateReg = BASE_RATE * effectiveMultiplier;
+                const rateOT = BASE_RATE * 1.5 * effectiveMultiplier;
+
+                if (effectiveMultiplier === 3.0) {
+                    dayTTHrs = regHours + otHours;
+                    dayTTPay = (regHours * (BASE_RATE * 3.0)) + (otHours * (BASE_RATE * 1.5 * 3.0));
+                    totalTTHours += dayTTHrs;
+                    totalTTPay += dayTTPay;
+                } else if (effectiveMultiplier === 2.0) {
+                    dayDTHrs = regHours + otHours;
+                    dayDTPay = (regHours * (BASE_RATE * 2.0)) + (otHours * (BASE_RATE * 1.5 * 2.0));
+                    totalDTHours += dayDTHrs;
+                    totalDTPay += dayDTPay;
+                } else {
+                    dayRegHrs = regHours;
+                    dayOTHrs = otHours;
+                    dayRegPay = regHours * rateReg;
+                    dayOTPay = otHours * rateOT;
+                    totalRegHours += dayRegHrs;
+                    totalOTHours += dayOTHrs;
+                    totalRegPay += dayRegPay;
+                    totalOTPay += dayOTPay;
+                }
+
+                let dayAllowances = 0;
+                
+                const startHour = parseInt(startStr.split(':')[0]);
+                const startMinOnly = parseInt(startStr.split(':')[1]);
+                const is2AM = (startHour === 2 && startMinOnly === 0);
+                
+                if (is2AM) {
+                    dayAllowances += 15;
+                    earlyCount++;
+                    autoEarly.classList.remove('hidden');
+                } else {
+                    autoEarly.classList.add('hidden');
+                }
+
+                if (otHours >= 3) {
+                    dayAllowances += 20;
+                    mealCount++;
+                    autoMeal.classList.remove('hidden');
+                } else {
+                    autoMeal.classList.add('hidden');
+                }
+
+                if (hasRamp) {
+                    dayAllowances += 16;
+                    rampCount++;
+                }
+
+                const dayGross = dayRegPay + dayOTPay + dayDTPay + dayTTPay + dayAllowances;
+                badge.innerText = `$${dayGross.toFixed(2)}`;
+
+                const formattedSubDate = new Date(shiftDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                dailyBreakdownHTML += `
+                    <div class="py-1.5 flex justify-between items-center text-slate-300">
+                        <div>
+                            <span class="font-semibold text-white">${dayName} <span class="text-[10px] text-emerald-400">(${formattedSubDate})</span></span>
+                            <span class="text-[10px] text-slate-500 block">${totalDurationHours.toFixed(1)} hrs logged</span>
+                        </div>
+                        <span class="font-bold text-emerald-400">$${dayGross.toFixed(2)}</span>
+                    </div>
+                `;
+            });
+
+            const earlyTotal = earlyCount * 15;
+            const mealTotal = mealCount * 20;
+            const rampTotal = rampCount * 16;
+            const totalAllowancesVal = earlyTotal + mealTotal + rampTotal;
+
+            const curRateReg = BASE_RATE;
+            const curRateOT = BASE_RATE * 1.5;
+            const curRateDT = BASE_RATE * 2.0;
+            const curRateTT = BASE_RATE * 3.0;
+
+            document.getElementById('lblRegSummary').innerText = `Regular Pay (${totalRegHours.toFixed(1)} hrs @ $${curRateReg.toFixed(2)})`;
+            document.getElementById('valRegSummary').innerText = `$${totalRegPay.toFixed(2)}`;
+
+            document.getElementById('lblOTSummary').innerText = `Overtime Pay (${totalOTHours.toFixed(1)} hrs @ $${curRateOT.toFixed(2)})`;
+            document.getElementById('valOTSummary').innerText = `$${totalOTPay.toFixed(2)}`;
+
+            document.getElementById('lblDTSummary').innerText = `Double Pay (${totalDTHours.toFixed(1)} hrs @ $${curRateDT.toFixed(2)})`;
+            document.getElementById('valDTSummary').innerText = `$${totalDTPay.toFixed(2)}`;
+
+            document.getElementById('lblTTSummary').innerText = `Triple Pay (${totalTTHours.toFixed(1)} hrs @ $${curRateTT.toFixed(2)})`;
+            document.getElementById('valTTSummary').innerText = `$${totalTTPay.toFixed(2)}`;
+
+            document.getElementById('lblEarlySummary').innerText = `Early Allowance (${earlyCount} @ $15.00)`;
+            document.getElementById('valEarlySummary').innerText = `$${earlyTotal.toFixed(2)}`;
+
+            document.getElementById('lblMealSummary').innerText = `Meal Allowance (${mealCount} @ $20.00)`;
+            document.getElementById('valMealSummary').innerText = `$${mealTotal.toFixed(2)}`;
+
+            document.getElementById('lblRampSummary').innerText = `Ramp Allowance (${rampCount} @ $16.00)`;
+            document.getElementById('valRampSummary').innerText = `$${rampTotal.toFixed(2)}`;
+
+            const grossTotal = totalRegPay + totalOTPay + totalDTPay + totalTTPay + totalAllowancesVal;
+            const nisDeduction = grossTotal * 0.111;
+            document.getElementById('valTotalNIS').innerText = `-$${nisDeduction.toFixed(2)}`;
+
+            const netTotal = grossTotal - nisDeduction;
+            document.getElementById('valNetTotal').innerText = `$${netTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            
+            document.getElementById('dailyBreakdownList').innerHTML = dailyBreakdownHTML || '<p class="text-slate-500 italic py-2">No active shifts logged.</p>';
+        }
+
+        function saveShiftsToDatabase() {
+            const shiftsData = [];
+            document.querySelectorAll('.day-card').forEach(card => {
+                const id = card.dataset.dayId;
+                shiftsData.push({
+                    day_id: id,
+                    day_name: card.dataset.dayName,
+                    shift_date: card.dataset.date,
+                    is_worked: document.getElementById(`worked_${id}`).checked,
+                    start_time: document.getElementById(`start_${id}`).value,
+                    finish_time: document.getElementById(`finish_${id}`).value,
+                    holiday_tier: document.getElementById(`holiday_${id}`).value,
+                    status_type: document.getElementById(`status_${id}`).value,
+                    ramp_allowance: document.getElementById(`ramp_${id}`).checked
+                });
+            });
+
+            fetch('/api/shifts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ shifts: shiftsData })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert('Shift history and dates successfully saved to SQLite database!');
+            })
+            .catch(err => {
+                console.error('Error saving shifts:', err);
+                alert('Failed to save shifts to database.');
+            });
+        }
+
+        function downloadPDF() {
+            const payload = {
+                week_start: document.getElementById('weekStartDate').value,
+                reg_text: document.getElementById('lblRegSummary').innerText.replace('Regular Pay (', '').replace(')', ''),
+                reg_amt: document.getElementById('valRegSummary').innerText,
+                ot_text: document.getElementById('lblOTSummary').innerText.replace('Overtime Pay (', '').replace(')', ''),
+                ot_amt: document.getElementById('valOTSummary').innerText,
+                dt_text: document.getElementById('lblDTSummary').innerText.replace('Double Pay (', '').replace(')', ''),
+                dt_amt: document.getElementById('valDTSummary').innerText,
+                tt_text: document.getElementById('lblTTSummary').innerText.replace('Triple Pay (', '').replace(')', ''),
+                tt_amt: document.getElementById('valTTSummary').innerText,
+                early_text: document.getElementById('lblEarlySummary').innerText.replace('Early Allowance (', '').replace(')', ''),
+                early_amt: document.getElementById('valEarlySummary').innerText,
+                meal_text: document.getElementById('lblMealSummary').innerText.replace('Meal Allowance (', '').replace(')', ''),
+                meal_amt: document.getElementById('valMealSummary').innerText,
+                ramp_text: document.getElementById('lblRampSummary').innerText.replace('Ramp Allowance (', '').replace(')', ''),
+                ramp_amt: document.getElementById('valRampSummary').innerText,
+                nis_amt: document.getElementById('valTotalNIS').innerText.replace('-', ''),
+                net_total: document.getElementById('valNetTotal').innerText
+            };
+
+            fetch('/api/download-payslip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'KiraZPredict_Payslip.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            })
+            .catch(err => {
+                console.error('Error generating PDF:', err);
+                alert('Failed to generate PDF payslip.');
+            });
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
